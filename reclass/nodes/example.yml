@@ -1,0 +1,137 @@
+classes:
+  - service.docker-composition.traefik
+  - service.docker-composition.hig
+
+parameters:
+
+  setupify:
+
+    sudo:
+      linux.system: true
+      linux.network: false
+      linux.storage: false
+    nosudo:
+      docker-composition.traefik: true
+      docker-composition.hig: true
+    formula:
+      force_fetch: true
+      force_reset: true
+      sources:
+        linux:
+          address: git@github.com:salt-formulas/salt-formula-linux.git
+          branch: master
+        docker:
+          address: git@github.com:salt-formulas/salt-formula-docker.git
+          branch: master
+        docker-composition:
+          address: git@github.com:bbinet/salt-formula-docker-composition.git
+          branch: master
+
+
+  linux:
+
+    system:
+      enabled: true
+      name: example
+      #domain:
+      timezone: Europe/Paris
+      utc: true
+
+      repo:
+        debiansecurity_jessie/updates:
+          default: true
+          source: "deb http://security.debian.org jessie/updates main"
+        debian_jessie:
+          default: true
+          source: "deb http://httpredir.debian.org/debian jessie main contrib non-free"
+        debian_jessie-updates:
+          default: true
+          source: "deb http://httpredir.debian.org/debian jessie-updates main"
+        debian_jessie-backports:
+          default: true
+          source: "deb http://httpredir.debian.org/debian jessie-backports main"
+
+      package:
+        python2.7:
+        python2.7-dev:
+        build-essential:
+        ssh:
+        fail2ban:
+        vim:
+        screen:
+        git:
+        tree:
+        apt-utils:
+        chrony:
+        python-pip:
+        python-pip-whl:
+
+      autoupdates:
+        enabled: true
+        mail: root
+        mail_only_on_error: false
+        remove_unused_dependencies: false
+        automatic_reboot: true
+        automatic_reboot_time: "02:00"
+
+      user:
+        bruno:
+          name: bruno
+          enabled: true
+          sudo: true
+          shell: /bin/bash
+          full_name: Bruno Binet
+          home: /home/bruno
+          email: bruno.binet@gmail.com
+          password: ${_user_hash_password}
+          groups:
+            - sudo
+            - docker
+            - plugdev
+            - lp
+            - lpadmin
+
+    network:
+      enabled: true
+      hostname: ${linux:system:name}
+
+
+  docker-composition:
+
+    traefik:
+      compose:
+        volumes:
+          traefik-data: {}
+        services:
+          traefik:
+            volumes:
+              - traefik-data:/var/lib/traefik
+            ports:
+              - "127.0.0.1:443:443"
+              - "127.0.0.1:80:80"
+              - "127.0.0.1:8080:8080"
+            networks:
+              - hig
+        networks:
+          hig:
+            external:
+              name: hig_default
+
+    hig:
+      compose:
+        volumes:
+          influxdb-data: {}
+          grafana-data: {}
+        services:
+          influxdb:
+            volumes:
+              - influxdb-data:/var/lib/influxdb
+            ports:
+              - "127.0.0.1:8086:8086"
+          grafana:
+            volumes:
+              - grafana-data:/var/lib/grafana
+            labels:
+              traefik.enable: "true"
+              traefik.frontend.passHostHeader: "true"
+              traefik.frontend.entryPoints: http

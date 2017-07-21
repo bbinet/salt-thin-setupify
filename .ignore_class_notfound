@@ -1,0 +1,8 @@
+reclass: &reclass
+  storage_type: yaml_fs
+  inventory_base_uri: ./reclass
+  ignore_class_notfound: true
+ext_pillar:
+  - reclass: *reclass
+master_tops:
+  reclass: *reclass
