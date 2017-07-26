@@ -72,6 +72,31 @@ parameters:
       directory:
         kapacitor:
           kapacitorconfig:
+            smtp:
+              enabled: false
+              host: smtp.gmail.com
+              port: 587
+              username: helios.alert.spam@gmail.com
+              password: changeme
+              no-verify: false
+              global: false
+              state-changes-only: false
+              from: helios.alert.spam@gmail.com
+              to: helios.alert.spam@gmail.com
+              idle-timeout: 300s
+            influxdb:
+              default:
+                enabled: true
+                default: true
+                urls: http://influxdb:8086
+                insecure-skip-verify: false
+                disable-subscriptions: false
+              second:
+                enabled: false
+                default: false
+                urls: http://localhost:1234
+                insecure-skip-verify: true
+                disable-subscriptions: true
             tickscripts:
               enerwhere:
                 enerwhere-mc-1:
