@@ -1,0 +1,546 @@
+classes:
+  - service.docker-composition.traefik
+  - service.docker-composition.hig
+
+parameters:
+
+  setupify:
+
+    nosudo:
+      docker-composition.traefik: true
+      docker-composition.hig: true
+    formula:
+      force_fetch: true
+      force_reset: true
+      sources:
+        docker:
+          address: git@github.com:salt-formulas/salt-formula-docker.git
+          branch: master
+        docker-composition:
+          address: git@github.com:bbinet/salt-formula-docker-composition.git
+          branch: master
+
+
+  docker-composition:
+
+    traefik:
+      compose:
+        volumes:
+          traefik-data: {}
+        services:
+          traefik:
+            volumes:
+              - traefik-data:/var/lib/traefik
+            ports:
+              - "127.0.0.1:443:443"
+              - "127.0.0.1:80:80"
+              - "127.0.0.1:8080:8080"
+            networks:
+              - hig
+        networks:
+          hig:
+            external:
+              name: hig_default
+
+    hig:
+      compose:
+        volumes:
+          influxdb-data: {}
+          grafana-data: {}
+          kapacitor-data: {}
+        services:
+          kapacitor:
+            volumes:
+              - kapacitor-data:/var/lib/kapacitor
+            ports:
+              - "127.0.0.1:9092:9092"
+          influxdb:
+            image: influxdb:1.3.1
+            volumes:
+              - influxdb-data:/var/lib/influxdb
+              - /home/louis/data:/data
+            ports:
+              - "127.0.0.1:8086:8086"
+          grafana:
+            volumes:
+              - grafana-data:/var/lib/grafana
+            labels:
+              traefik.enable: "true"
+              traefik.frontend.passHostHeader: "true"
+              traefik.frontend.entryPoints: http
+              
+      directory:
+        kapacitor:
+          kapacitorconfig:
+            tickscripts:
+              enerwhere:
+                enerwhere-mc-1:
+                  availability:
+                    tick: availability
+                    enable: false
+                    cfg:
+                      period: 48h
+                      every: 24h
+                      by: 24h
+                      tracker: F1
+                      log: /tmp/availability.log
+                  busStatus:
+                    tick: busStatus
+                    enable: false
+                    cfg:
+                      cste: 7.0
+                      period: 2m
+                      every: 2m
+                      tracker: F1
+                      log: /tmp/busStatus.log
+                  current:
+                    tick: current
+                    enable: false
+                    cfg:
+                      warn: 100
+                      crit: 120
+                      period: 2m
+                      every: 2m
+                      by: 2m
+                      tracker: F1
+                      log: /tmp/current.log
+                  deadman:
+                    tick: deadman
+                    enable: false
+                    cfg:
+                      points: 1.0
+                      period: 65m
+                      every: 1m
+                      tracker: F1
+                      log: /tmp/deadman.log
+                  driveMode:
+                    tick: driveMode
+                    enable: false
+                    cfg:
+                      day : 1
+                      night : 0
+                      period: 2m
+                      every: 2m
+                      tracker: F1
+                      log: /tmp/driveMode.log
+                  mode:
+                    tick: mode
+                    enable: false
+                    cfg:
+                      day : 5
+                      night : 2
+                      goTo : 3
+                      period: 2m
+                      every: 2m
+                      tracker: F1
+                      log: /tmp/mode.log
+                  output:
+                    tick: output
+                    enable: false
+                    cfg:
+                      warn_high: 600
+                      warn_low: -1400
+                      crit_high: 700
+                      crit_low: -1500
+                      period: 2m
+                      every: 2m
+                      by: 2m
+                      tracker: F1
+                      log: /tmp/output.log
+                  roll:
+                    tick: roll
+                    enable: false
+                    cfg:
+                      max_angle: 47.8
+                      min_angle: -47.8
+                      warn: 3
+                      crit: 10
+                      period: 2m
+                      every: 2m
+                      tracker: F1
+                      log: /tmp/roll.log
+                  rollEncoder:
+                    tick: rollEncoder
+                    enable: false
+                    cfg:
+                      crit: 90
+                      period: 2m
+                      every: 2m
+                      by: 10s
+                      tracker: F1
+                      log: /tmp/rollEncoder.log
+                  sun:
+                    tick: sun
+                    enable: false
+                    cfg:
+                      day: 1
+                      period: 48h
+                      every: 24h
+                      tracker: F1
+                  Vbus:
+                    tick: Vbus
+                    enable: false
+                    cfg:
+                      warn: 26350
+                      crit: 25000
+                      period: 2m
+                      every: 2m
+                      by: 2m
+                      tracker: F1
+                      log: /tmp/Vbus.log
+                  GENERAL_busStatus:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: busStatus
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_busStatus.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_current:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: current
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_current.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_deadman:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: deadman
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_deadman.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_driveMode:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: driveMode
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_driveMode.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_mode:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: mode
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_mode.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_output:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: output
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_output.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_roll:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: roll
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_roll.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_rollEncoder:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: rollEncoder
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_roll_Encoder.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_Vbus:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: Vbus
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_Vbus.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=enerwhere
+                      email: helios.alert.spam@gmail.com
+              univrabat:
+                univrabat-mc-1:
+                  accelerometer:
+                    tick: accelerometer
+                    enable: false
+                    cfg:
+                      period: 2m
+                      every: 2m
+                      tracker: F3
+                      log: /tmp/accelerometer.log
+                  availability:
+                    tick: availability
+                    enable: false
+                    cfg:
+                      period: 48h
+                      every: 24h
+                      by: 24h
+                      tracker: F3
+                      log: /tmp/availability.log
+                  busStatus:
+                    tick: busStatus
+                    enable: false
+                    cfg:
+                      cste: 2.0
+                      period: 2m
+                      every: 2m
+                      tracker: F3
+                      log: /tmp/busStatus.log
+                  current:
+                    tick: current
+                    enable: false
+                    cfg:
+                      warn: 2
+                      crit: 5
+                      period: 2m
+                      every: 2m
+                      by: 2m
+                      tracker: F3
+                      log: /tmp/current.log
+                  deadman:
+                    tick: deadman
+                    enable: false
+                    cfg:
+                      points: 1.0
+                      period: 65m
+                      every: 1m
+                      tracker: F3
+                      log: /tmp/deadman.log
+                  driveMode:
+                    tick: driveMode
+                    enable: false
+                    cfg:
+                      day : 1
+                      night : 0
+                      period: 2m
+                      every: 2m
+                      tracker: F3
+                      log: /tmp/driveMode.log
+                  Isensor:
+                    tick: Isensor
+                    enable: false
+                    cfg:
+                      warn: 1500
+                      crit: 2000
+                      period: 2m
+                      every: 2m
+                      by: 2m
+                      tracker: F3
+                      log: /tmp/Isensor.log
+                  mode:
+                    tick: mode
+                    enable: false
+                    cfg:
+                      day : 5
+                      night : 2
+                      goTo : 3
+                      period: 2m
+                      every: 2m
+                      tracker: F3
+                      log: /tmp/mode.log
+                  roll:
+                    tick: roll
+                    enable: false
+                    cfg:
+                      max_angle: 81.8
+                      min_angle: -83.1
+                      warn: 3
+                      crit: 10
+                      period: 2m
+                      every: 2m
+                      tracker: F3
+                      log: /tmp/roll.log
+                  rollEncoder:
+                    tick: rollEncoder
+                    enable: false
+                    cfg:
+                      crit: 300
+                      period: 2m
+                      every: 2m
+                      by: 10s
+                      tracker: F3
+                      log: /tmp/rollEncoder.log
+                  sun:
+                    tick: sun
+                    enable: false
+                    cfg:
+                      day: 1
+                      period: 48h
+                      every: 24h
+                      tracker: F3
+                  tilt:
+                    tick: tilt
+                    enable: false
+                    cfg:
+                      max_angle: 9.8
+                      min_angle: -25.0
+                      warn: 3
+                      crit: 10
+                      period: 2m
+                      every: 2m
+                      tracker: F3
+                      log: /tmp/tilt.log
+                  tiltEncoder:
+                    tick: tiltEncoder
+                    enable: false
+                    cfg:
+                      crit: 250
+                      period: 2m
+                      every: 2m
+                      by: 10s
+                      tracker: F3
+                      log: /tmp/tiltEncoder.log
+                  Vbus:
+                    tick: Vbus
+                    enable: false
+                    cfg:
+                      warn: 24350
+                      crit: 23000
+                      period: 2m
+                      every: 2m
+                      by: 2m
+                      tracker: F3
+                      log: /tmp/Vbus.log
+                  GENERAL_accelerometer:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: accelerometer
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_accelerometer.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_busStatus:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: busStatus
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_busStatus.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_current:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: current
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_current.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_deadman:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: deadman
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_deadman.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_driveMode:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: driveMode
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_driveMode.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_Isensor:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: Isensor
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_Isensor.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_mode:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: mode
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_mode.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_roll:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: roll
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_roll.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_rollEncoder:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: rollEncoder
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_roll_Encoder.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_tilt:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: tilt
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_tilt.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_tiltEncoder:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: tiltEncoder
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_tiltEncoder.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                  GENERAL_Vbus:
+                    tick: general
+                    enable: false
+                    cfg:
+                      id: Vbus
+                      period: 2m
+                      every: 2m
+                      log: /tmp/GENERAL_Vbus.log
+                      link: http://localhost:3000/dashboard/db/tacker_alert?orgId=1&from=now-6h&to=now&var-db=univrabat
+                      email: helios.alert.spam@gmail.com
+                    
+              
+              
