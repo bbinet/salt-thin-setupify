@@ -2,7 +2,40 @@
 
 set -e
 
-base_dir="${1:-.}"
+usage() {
+  echo "Usage: $0 [options]"
+  echo ""
+  echo "    Available [options] are:"
+  echo "      -h|--help"
+  echo "      -d|--dir <path to the directory in which setupify will be cloned [.]>"
+  echo "      -t|--target <make target to apply once cloned [deps]>"
+  echo "                  (one of: deps thin apply_formula apply_nosudo apply_sudo all)"
+  echo "      -i|--id <minion_id to set []>"
+}
+
+OPTS=`getopt -o hd:t:i: --long help,dir:,target:,id: -- "$@"`
+if [ $? != 0 ]
+then
+    usage
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+# set default values
+base_dir="."
+make_target="deps"
+minion_id=""
+while true ; do
+    case "$1" in
+        -h|--help) usage; exit 0; shift;;
+        -d|--dir) base_dir=$2; shift 2;;
+        -t|--target) make_target=$2; shift 2;;
+        -i|--id) minion_id=$2; shift 2;;
+        --) shift; break;;
+    esac
+done
+
 cd $base_dir
 
 if [ -d "./setupify/.git" ] || [ -d "../setupify/.git" ]
@@ -89,4 +122,4 @@ rm -fr /tmp/_setupify_/
 chmod 400 setupify/.ssh/id_rsa
 chmod 700 setupify/.ssh/git.sh
 
-(cd setupify; make deps)
+(cd setupify; minion_id="$minion_id" make $make_target)
