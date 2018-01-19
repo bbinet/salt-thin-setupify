@@ -60,6 +60,7 @@ salt_master_{{ formula_name }}_formula:
   - branch: {{ formula.branch|default(formula.revision) }}
   - force_fetch: {{ formula.force_fetch|default(salt['pillar.get']('setupify:formula:force_fetch', False)) }}
   - force_reset: {{ formula.force_reset|default(salt['pillar.get']('setupify:formula:force_reset', False)) }}
+  - identity: {{ grains['root'] }}/.ssh/id_rsa
   - require:
     - file: formulas_dir
   - require_in:
