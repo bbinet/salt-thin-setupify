@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -8,7 +8,7 @@ usage() {
   echo "    Available [options] are:"
   echo "      -h|--help"
   echo "      -d|--dir <path to the directory in which setupify will be cloned [.]>"
-  echo "      -t|--target <make target to apply once cloned [deps]>"
+  echo "      -t|--targets <comma separated list of make targets to apply once cloned [deps]>"
   echo "                  (one of: deps thin apply_formula apply_nosudo apply_sudo all)"
   echo "      -i|--id <minion_id to set []>"
 }
@@ -24,17 +24,18 @@ eval set -- "$OPTS"
 
 # set default values
 base_dir="."
-make_target="deps"
+make_targets="deps"
 minion_id=""
 while true ; do
     case "$1" in
         -h|--help) usage; exit 0; shift;;
         -d|--dir) base_dir=$2; shift 2;;
-        -t|--target) make_target=$2; shift 2;;
+        -t|--target) make_targets=$2; shift 2;;
         -i|--id) minion_id=$2; shift 2;;
         --) shift; break;;
     esac
 done
+IFS=',' read -ra make_targets_arr <<< "$make_targets"
 
 cd $base_dir
 
@@ -122,4 +123,4 @@ rm -fr /tmp/_setupify_/
 chmod 400 setupify/.ssh/id_rsa
 chmod 700 setupify/.ssh/git.sh
 
-(cd setupify; minion_id="$minion_id" make $make_target)
+(cd setupify; minion_id="$minion_id" make ${make_targets_arr[@]})
