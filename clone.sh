@@ -11,9 +11,10 @@ usage() {
   echo "      -t|--targets <comma separated list of make targets to apply once cloned [deps]>"
   echo "                  (one of: deps thin apply_formula apply_nosudo apply_sudo all)"
   echo "      -i|--id <minion_id to set []>"
+  echo "      -n|--noservices <set grain noservices: true>"
 }
 
-OPTS=`getopt -o hd:t:i: --long help,dir:,target:,id: -- "$@"`
+OPTS=`getopt -o hnd:t:i: --long help,noservices,dir:,target:,id: -- "$@"`
 if [ $? != 0 ]
 then
     usage
@@ -26,12 +27,14 @@ eval set -- "$OPTS"
 base_dir="."
 make_targets="deps"
 minion_id=""
+noservices="false"
 while true ; do
     case "$1" in
         -h|--help) usage; exit 0; shift;;
         -d|--dir) base_dir=$2; shift 2;;
         -t|--target) make_targets=$2; shift 2;;
         -i|--id) minion_id=$2; shift 2;;
+        -n|--noservices) noservices="true"; shift;;
         --) shift; break;;
     esac
 done
@@ -123,4 +126,4 @@ rm -fr /tmp/_setupify_/
 chmod 400 setupify/.ssh/id_rsa
 chmod 700 setupify/.ssh/git.sh
 
-(cd setupify; minion_id="$minion_id" make ${make_targets_arr[@]})
+(cd setupify; minion_id="$minion_id" noservices="$noservices" make ${make_targets_arr[@]})

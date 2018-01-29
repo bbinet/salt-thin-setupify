@@ -19,6 +19,10 @@ pull:
 .tmp/etc/salt/minion_id:
 	mkdir -p .tmp/etc/salt/
 	echo "root: ${CURDIR}" > grains
+	@noservices="$(noservices)"; \
+	if [ "$$noservices" = "true" ]; then \
+		echo "noservices: true" >> grains; \
+	fi
 	@minion_id="$(minion_id)"; \
 	if [ -z "$$minion_id" ]; then \
 		echo -n "Enter minion_id [${HOST}]: "; \
