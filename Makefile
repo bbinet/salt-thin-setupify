@@ -11,7 +11,7 @@ help:
 	@echo "Available targets: deps pull thin thin_rm grains pillar salt apply apply_formula apply_nosudo apply_sudo all"
 
 deps:
-	${SUDO} apt-get install -y git wget python2.7 python-apt jq
+	${SUDO} apt-get update && ${SUDO} apt-get install -y git wget python2.7 python-apt jq
 
 pull:
 	GIT_SSH=".ssh/git.sh" git pull
