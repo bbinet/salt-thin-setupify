@@ -57,8 +57,8 @@ apply: thin
 apply_formula: thin
 	# this state should be run twice because jinja is not evaluated at runtime:
 	# https://github.com/saltstack/salt/issues/38072
-	${SALT_APPLY} --log-level=quiet setupify.formula localconfig=.ignore_class_notfound
-	${SALT_APPLY} --log-level=quiet setupify.formula localconfig=.ignore_class_notfound
+	${SALT_APPLY} setupify.formula localconfig=.ignore_class_notfound
+	${SALT_APPLY} setupify.formula localconfig=.ignore_class_notfound
 apply_nosudo: thin
 	${SALT_APPLY} setupify.nosudo
 apply_sudo: thin
