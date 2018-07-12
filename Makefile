@@ -1,5 +1,5 @@
-THIN_VERSION=nitrogen_thin_tgz
-THIN_MD5="a54221abdf986ae7d776313552be1376"
+THIN_VERSION=oxygen_thin_tgz
+THIN_MD5="2a917c1c1e62f9bc44f851fd3e30ef38"
 THIN_RM := $(shell echo "${THIN_MD5}  .tmp/thin.tgz" | md5sum --check --status || echo thin_rm)
 HOST=$(shell hostname)
 UID := $(shell id -u)
