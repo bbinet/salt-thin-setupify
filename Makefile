@@ -8,7 +8,12 @@ SALT=python2.7 .tmp/thin/salt-call -c ${CURDIR}
 SALT_APPLY=${SALT} --state-output=changes state.apply
 
 help:
-	@echo "Available targets: deps pull thin thin_rm grains pillar salt apply apply_formula apply_nosudo apply_sudo all"
+	@echo "Available targets:"
+	@echo "    deps pull thin thin_rm"
+	@echo "    grains pillar salt apply_formula"
+	@echo "    apply apply_nosudo apply_sudo"
+	@echo "    test_apply test_apply_nosudo test_apply_sudo"
+	@echo "    all (= deps pull apply_formula apply_nosudo apply_sudo)"
 
 deps:
 	${SUDO} apt-get update && ${SUDO} apt-get install -y git wget python2.7 python-apt jq
@@ -36,10 +41,6 @@ thin: .tmp/thin.tgz .tmp/etc/salt/minion_id
 thin_rm:
 	rm -f .tmp/thin.tgz
 
-grains: thin
-	${SALT} grains.items
-pillar: thin
-	${SALT} pillar.items
 salt: thin
 	@arg="$(arg)"; \
 	if [ -z "$$arg" ]; then \
@@ -47,6 +48,10 @@ salt: thin
 		read -r arg; \
 	fi; \
 	${SALT} $$arg
+grains: thin
+	${SALT} grains.items
+pillar: thin
+	${SALT} pillar.items
 apply: thin
 	@arg="$(arg)"; \
 	if [ -z "$$arg" ]; then \
@@ -64,7 +69,18 @@ apply_nosudo: thin
 	${SALT_APPLY} setupify.nosudo
 apply_sudo: thin
 	${SUDO} ${SALT_APPLY} setupify.sudo
+test_apply: thin
+	@arg="$(arg)"; \
+	if [ -z "$$arg" ]; then \
+		echo -n "Enter state to test apply:\n${SALT_APPLY} "; \
+		read -r arg; \
+	fi; \
+	${SALT_APPLY} $$arg test=True
+test_apply_nosudo: thin
+	${SALT_APPLY} setupify.nosudo test=True
+test_apply_sudo: thin
+	${SUDO} ${SALT_APPLY} setupify.sudo test=True
 
 all: deps pull apply_formula apply_nosudo apply_sudo
 
-.PHONY: deps pull thin thin_rm grains pillar salt apply apply_formula apply_nosudo apply_sudo all
+.PHONY: deps pull thin thin_rm grains pillar salt apply apply_formula apply_nosudo apply_sudo test_apply test_apply_nosudo test_apply_sudo all
