@@ -59,6 +59,7 @@ apply_formula: thin
 	# https://github.com/saltstack/salt/issues/38072
 	${SALT_APPLY} setupify.formula localconfig=.ignore_class_notfound
 	${SALT_APPLY} setupify.formula localconfig=.ignore_class_notfound
+	${SALT} saltutil.sync_all
 apply_nosudo: thin
 	${SALT_APPLY} setupify.nosudo
 apply_sudo: thin
