@@ -1,10 +1,10 @@
-THIN_VERSION=oxygen_thin_tgz
-THIN_MD5="2a917c1c1e62f9bc44f851fd3e30ef38"
+THIN_VERSION=fluorine_thin_tgz
+THIN_MD5="85ad5afedd1df48756ede8b2c6c76341"
 THIN_RM := $(shell echo "${THIN_MD5}  .tmp/thin.tgz" | md5sum --check --status || echo thin_rm)
 HOST=$(shell hostname)
 UID := $(shell id -u)
 SUDO := $(shell test ${UID} -eq 0 || echo "sudo")
-SALT=python2.7 .tmp/thin/salt-call -c ${CURDIR}
+SALT=python3 .tmp/thin/salt-call -c ${CURDIR}
 SALT_APPLY=${SALT} --state-output=changes state.apply
 
 help:
@@ -16,7 +16,7 @@ help:
 	@echo "    all (= deps pull apply_ext apply_formula apply_nosudo apply_sudo)"
 
 deps:
-	${SUDO} apt-get update && ${SUDO} apt-get install -y git wget python2.7 python-apt jq
+	${SUDO} apt-get update && ${SUDO} apt-get install -y git wget python3 python3-apt jq
 
 pull:
 	GIT_SSH=".ssh/git.sh" git pull

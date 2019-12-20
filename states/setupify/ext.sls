@@ -8,7 +8,7 @@ clean_ext_dir:
   - name: {{ grains['root'] }}/ext
   - clean: True
 
-{%- for src_name, src in salt['pillar.get']('setupify:ext:sources', {}).iteritems() %}
+{%- for src_name, src in salt['pillar.get']('setupify:ext:sources', {}).items() %}
 salt_master_{{ src_name }}_src_dir:
   file.directory:
   - name: {{ grains['root'] }}/ext/{{ src_name }}

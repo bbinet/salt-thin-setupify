@@ -43,7 +43,7 @@ clean_{{ directory }}_dir:
   - clean: True
 {%- endfor %}
 
-{%- for formula_name, formula in salt['pillar.get']('setupify:formula:sources', {}).iteritems() %}
+{%- for formula_name, formula in salt['pillar.get']('setupify:formula:sources', {}).items() %}
 
 salt_master_{{ formula_name }}_formula_dir:
   file.directory:

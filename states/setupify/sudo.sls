@@ -1,5 +1,5 @@
 {%- set states = [] %}
-{%- for state, enabled in salt['pillar.get']('setupify:sudo', {}).iteritems() %}
+{%- for state, enabled in salt['pillar.get']('setupify:sudo', {}).items() %}
   {%- if enabled != False %}
   {%- do states.append(state) %}
   {%- endif %}
