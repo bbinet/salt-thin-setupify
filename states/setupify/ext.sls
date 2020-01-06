@@ -1,3 +1,7 @@
+ext-always-passes:
+  test.succeed_without_changes:
+    - name: ext-always-passes
+
 {%- set ext_sources = salt['pillar.get']('setupify:ext:sources', {}) %}
 {%- if ext_sources|count > 0 %}
 ext_dir:
