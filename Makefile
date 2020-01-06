@@ -4,7 +4,7 @@ THIN_RM := $(shell echo "${THIN_MD5}  .tmp/thin.tgz" | md5sum --check --status |
 HOST=$(shell hostname)
 UID := $(shell id -u)
 SUDO := $(shell test ${UID} -eq 0 || echo "sudo")
-SALT=python3 .tmp/thin/salt-call -c ${CURDIR}
+SALT=python3 .tmp/thin/salt-call --retcode-passthrough -c ${CURDIR}
 SALT_APPLY=${SALT} --state-output=changes state.apply
 
 help:
