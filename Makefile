@@ -1,10 +1,20 @@
-THIN_VERSION=fluorine_thin_tgz
-THIN_MD5="85ad5afedd1df48756ede8b2c6c76341"
+PYTHON="python"
+ifneq (, $(shell which python3 ))
+    ifneq ($(shell python3 -c 'import sys; print(int(float("%d.%d"% sys.version_info[0:2]) >= 3.7))' ), 0)
+    PYTHON="python3"
+    endif
+endif
+THIN_VERSION=py2_fluorine_thin_tgz
+THIN_MD5="e519ee5efc64a1a90962467c37bed578"
+ifeq ($(PYTHON), "python3")
+    THIN_VERSION=py3_fluorine_thin_tgz
+    THIN_MD5="2f729e5844e4927748513b629ddfaa28"
+endif
 THIN_RM := $(shell echo "${THIN_MD5}  .tmp/thin.tgz" | md5sum --check --status || echo thin_rm)
 HOST=$(shell hostname)
 UID := $(shell id -u)
 SUDO := $(shell test ${UID} -eq 0 || echo "sudo")
-SALT=python3 .tmp/thin/salt-call --retcode-passthrough -c ${CURDIR}
+SALT=${PYTHON} .tmp/thin/salt-call --retcode-passthrough -c ${CURDIR}
 SALT_APPLY=${SALT} --state-output=changes state.apply
 
 help:
@@ -16,7 +26,7 @@ help:
 	@echo "    all (= deps pull apply_ext apply_formula apply_nosudo apply_sudo)"
 
 deps:
-	${SUDO} apt-get update && ${SUDO} apt-get install -y git wget python3 python3-apt jq
+	${SUDO} apt-get update && ${SUDO} apt-get install -y git wget ${PYTHON}-apt jq
 
 pull:
 	GIT_SSH=".ssh/git.sh" git pull
