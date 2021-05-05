@@ -6,6 +6,7 @@ file_roots:
 reclass: &reclass
   storage_type: yaml_fs
   inventory_base_uri: ./reclass
+  scalar_parameters: "_param"
   ignore_class_notfound: true
   ignore_class_regexp:
     - 'service.*'
