@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Git pre-commit hook: automatically encrypt secrets in reclass/ YAML files
+# Install with: make sops_install_hook
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SOPS_YAML="${REPO_ROOT}/.sops.yaml"
+ENCRYPTED_REGEX="(password|passwd|secret|token|api_key|private_key|pass|key|credential|auth)"
+
+# Skip if sops is not installed
+if ! command -v sops &>/dev/null; then
+    echo "WARNING: sops not found, skipping automatic encryption of reclass/ secrets."
+    echo "         Run 'make sops_setup' to install sops + age."
+    exit 0
+fi
+
+# Skip if .sops.yaml has placeholder key (setup not complete)
+if grep -q "age1REPLACE_WITH_YOUR_PUBLIC_KEY" "${SOPS_YAML}" 2>/dev/null; then
+    echo "WARNING: .sops.yaml not configured (placeholder key found)."
+    echo "         Run 'make sops_setup' to complete setup."
+    exit 0
+fi
+
+# Get staged reclass YAML files
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^reclass/.*\.ya?ml$' || true)
+
+if [ -z "${staged_files}" ]; then
+    exit 0
+fi
+
+needs_restage=false
+
+for file in ${staged_files}; do
+    abs_file="${REPO_ROOT}/${file}"
+
+    # Check if file has a sops metadata block already
+    if grep -q "^sops:" "${abs_file}" 2>/dev/null; then
+        # Already encrypted — but a new plaintext sensitive field may have been
+        # added (mixed state). Detect by looking for sensitive keys whose value
+        # is NOT ENC[...]. If found, decrypt then re-encrypt from scratch.
+        if grep -E "^\s+${ENCRYPTED_REGEX}\s*:" "${abs_file}" 2>/dev/null \
+                | grep -qv "ENC\["; then
+            tmp="$(mktemp /tmp/sops-hook-XXXXXX.yml)"
+            if sops --decrypt "${abs_file}" > "${tmp}" 2>/dev/null; then
+                cp "${tmp}" "${abs_file}"
+                sops --encrypt --in-place "${abs_file}"
+                echo "sops: re-encrypted ${file} (new plaintext field found)"
+                git add "${abs_file}"
+                needs_restage=true
+            else
+                echo "WARNING: sops could not decrypt ${file}, leaving as-is."
+            fi
+            rm -f "${tmp}"
+        fi
+    else
+        # Not yet encrypted: check if file contains any sensitive keys
+        if grep -qE "^\s+${ENCRYPTED_REGEX}\s*:" "${abs_file}" 2>/dev/null; then
+            echo "sops: encrypting secrets in ${file}"
+            sops --encrypt --in-place "${abs_file}"
+            git add "${abs_file}"
+            needs_restage=true
+        fi
+    fi
+done
+
+if [ "${needs_restage}" = true ]; then
+    echo "sops: secrets encrypted and files re-staged."
+fi

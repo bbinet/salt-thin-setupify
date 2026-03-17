@@ -1,0 +1,13 @@
+# SOPS configuration for automatic encryption of secrets in reclass/
+#
+# Setup:
+#   1. Run `make sops_setup` to install sops + age and generate your key pair
+#   2. The public key will be automatically added to this file
+#   3. Run `make sops_install_hook` to install the pre-commit hook
+#
+# The following regex defines which YAML keys are considered secrets and will
+# be encrypted. Adjust to your needs.
+creation_rules:
+  - path_regex: reclass/.*\.ya?ml$
+    encrypted_regex: "^(password|passwd|secret|token|api_key|private_key|pass|key|credential|auth)$"
+    age: age1REPLACE_WITH_YOUR_PUBLIC_KEY
