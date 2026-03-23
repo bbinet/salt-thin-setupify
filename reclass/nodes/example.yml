@@ -3,6 +3,10 @@ classes:
 
 parameters:
 
+  _param:
+    influxdb_admin_password: s3cr3t_influxdb
+    grafana_admin_password: s3cr3t_grafana
+
   setupify:
 
     sudo:
@@ -16,13 +20,13 @@ parameters:
       force_reset: true
       sources:
         linux:
-          address: git@github.com:salt-formulas/salt-formula-linux.git
+          address: https://github.com/salt-formulas/salt-formula-linux.git
           branch: master
         docker:
-          address: git@github.com:salt-formulas/salt-formula-docker.git
+          address: https://github.com/salt-formulas/salt-formula-docker.git
           branch: master
         docker-composition:
-          address: git@github.com:bbinet/salt-formula-docker-composition.git
+          address: https://github.com/bbinet/salt-formula-docker-composition.git
           branch: master
 
 
@@ -45,10 +49,14 @@ parameters:
           grafana-data: {}
         services:
           influxdb:
+            environment:
+              INFLUXDB_ADMIN_PASSWORD: ${_param:influxdb_admin_password}
             volumes:
               - influxdb-data:/var/lib/influxdb
             ports:
               - "127.0.0.1:8086:8086"
           grafana:
+            environment:
+              GF_SECURITY_ADMIN_PASSWORD: ${_param:grafana_admin_password}
             volumes:
               - grafana-data:/var/lib/grafana
