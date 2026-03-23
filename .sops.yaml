@@ -5,9 +5,12 @@
 #   2. The public key will be automatically added to this file
 #   3. Run `make sops_install_hook` to install the pre-commit hook
 #
-# The following regex defines which YAML keys are considered secrets and will
-# be encrypted. Adjust to your needs.
+# The following regex matches YAML keys considered secrets (case-insensitive
+# substring match). This covers both exact keys (password, secret, token…)
+# and compound keys like INFLUXDB_ADMIN_PASSWORD, secret_of_grafana,
+# grafana_admin_password, ssh_key, keyfile, gpg_key, private_key, etc.
+# (\bkey matches key, keyfile, ssh_key, api_key… but not donkey/monkey).
 creation_rules:
   - path_regex: reclass/.*\.ya?ml$
-    encrypted_regex: "^(password|passwd|secret|token|api_key|private_key|pass|key|credential|auth)$"
-    age: age1REPLACE_WITH_YOUR_PUBLIC_KEY
+    encrypted_regex: "(?i)(password|passwd|secret|token|credential|auth|\\bkey)"
+    age: age1qqdlc94dwje03ky50arqwp27nk2da0w3avxc5kg29a7adsfwpssq5hy38u
