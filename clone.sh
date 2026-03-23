@@ -9,7 +9,7 @@ usage() {
   echo "      -h|--help"
   echo "      -d|--dir <path to the directory in which setupify will be cloned [.]>"
   echo "      -t|--targets <comma separated list of make targets to apply once cloned [deps]>"
-  echo "                  (one of: deps thin apply_formula apply_nosudo apply_sudo all)"
+  echo "                  (one of: deps relenv apply_formula apply_nosudo apply_sudo all)"
   echo "      -i|--id <minion_id to set []>"
   echo "      -n|--noservices <set grain noservices: true>"
 }

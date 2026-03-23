@@ -1,0 +1,27 @@
+# salt runtime dependencies (not pulled in automatically by pip install salt)
+tornado>=6
+jinja2>=3
+pyzmq>=24
+pycryptodome>=3.9
+distro>=1.6
+looseversion>=1.0
+
+# reclass (fork salt-formulas, required for ext_pillar + master_tops integration)
+reclass @ https://github.com/salt-formulas/reclass/archive/v1.7.0.zip
+
+# docker SDK — replaces deprecated docker-py==1.10.6 + docker-pycreds==0.4.0
+# API compatible for common usage (docker.from_env(), containers, etc.)
+docker>=6.1,<8
+websocket-client>=1.3
+
+# jsonnet — 0.21+ provides pre-built wheels for Python 3.10
+# (0.17.0 was source-only and fails to build on Python 3.10)
+jsonnet>=0.21
+
+# influxdb 1.x client
+influxdb>=5.3.1,<6
+
+# misc packages used by some salt-formulas
+six
+pytz
+ddt
