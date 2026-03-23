@@ -28,7 +28,7 @@ cleanup() { rm -rf "${TMPROOT}"; }
 trap cleanup EXIT
 
 # ── Helpers ───────────────────────────────────────────────────────────────
-ENCRYPTED_REGEX="(password|passwd|secret|token|api_key|private_key|pass|key|credential|auth)"
+ENCRYPTED_REGEX='(?i)(password|passwd|secret|token|credential|auth|\bkey)'
 
 # Create an isolated git repo with a fresh age key, configured .sops.yaml,
 # and copies of the project scripts. Prints the path to the age key file.
@@ -69,7 +69,7 @@ encrypt_file() {
     SOPS_AGE_KEY_FILE="${keyfile}" sops --encrypt \
         --config "${dir}/.sops.yaml" \
         --age "${pubkey}" \
-        --encrypted-regex "^(${ENCRYPTED_REGEX})$" \
+        --encrypted-regex "${ENCRYPTED_REGEX}" \
         --in-place "${dir}/${relpath}"
 }
 

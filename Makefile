@@ -20,7 +20,7 @@ help:
 	@echo "    grains pillar salt apply_ext apply_formula"
 	@echo "    apply apply_nosudo apply_sudo"
 	@echo "    test_apply test_apply_nosudo test_apply_sudo"
-	@echo "    check"
+	@echo "    check test_sops_apply"
 	@echo "    all (= deps pull apply_ext apply_formula apply_nosudo apply_sudo)"
 	@echo ""
 	@echo "SOPS/age encryption targets:"
@@ -76,14 +76,19 @@ pull:
 		.tmp/relenv/lib/python*/site-packages/reclass/values/parser_funcs.py
 	touch .tmp/.relenv_installed
 
-relenv: .tmp/.relenv_installed .tmp/etc/salt/minion_id
+relenv: .tmp/.relenv_installed .tmp/etc/salt/minion_id .tmp/reclass
 
+.tmp/reclass:
+	$(MAKE) sops_decrypt
 relenv_rm:
 	rm -rf .tmp/relenv .tmp/.relenv_installed
 
 check: .tmp/.relenv_installed
 	@bash tests/check_env.sh
 	@bash tests/check_makefile.sh
+
+test_sops_apply: .tmp/.relenv_installed
+	@bash tests/test-sops-apply.sh
 
 salt: relenv
 	@arg="$(arg)"; \
@@ -144,14 +149,23 @@ sops_install_hook:
 # Decrypt encrypted reclass files to .tmp/reclass/ for use by salt-call.
 # Files without sops metadata are copied as-is.
 sops_decrypt:
-	@if ! command -v sops >/dev/null 2>&1; then \
-		echo "sops not found. Run 'make sops_setup' first."; exit 1; \
-	fi
 	@rm -rf .tmp/reclass && mkdir -p .tmp/reclass
+	@find reclass -mindepth 1 -type d | while read d; do \
+		mkdir -p ".tmp/$${d}"; \
+	done
+	@find reclass -mindepth 1 -maxdepth 5 -type l | while read lnk; do \
+		target="$$(readlink -f "$$lnk")"; \
+		dest=".tmp/$${lnk}"; \
+		mkdir -p "$$(dirname $${dest})"; \
+		ln -sf "$$target" "$$dest"; \
+	done
 	@find reclass -name "*.yml" -o -name "*.yaml" | while read f; do \
 		dest=".tmp/$${f}"; \
 		mkdir -p "$$(dirname $${dest})"; \
 		if grep -q "^sops:" "$${f}" 2>/dev/null; then \
+			if ! command -v sops >/dev/null 2>&1; then \
+				echo "sops not found but $${f} is encrypted. Run 'make sops_setup' first."; exit 1; \
+			fi; \
 			SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --decrypt "$${f}" > "$${dest}"; \
 			echo "  decrypted: $${f}"; \
 		else \
@@ -195,4 +209,4 @@ sops_history_encrypt:
 test_sops:
 	@bash tests/test-sops-encryption.sh
 
-.PHONY: deps pull relenv relenv_rm check grains pillar salt apply apply_ext apply_formula apply_nosudo apply_sudo test_apply test_apply_nosudo test_apply_sudo all sops_setup sops_install_hook sops_decrypt sops_encrypt sops_history_encrypt test_sops
+.PHONY: deps pull relenv relenv_rm check test_sops_apply grains pillar salt apply apply_ext apply_formula apply_nosudo apply_sudo test_apply test_apply_nosudo test_apply_sudo all sops_setup sops_install_hook sops_decrypt sops_encrypt sops_history_encrypt test_sops
