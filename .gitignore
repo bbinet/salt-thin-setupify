@@ -4,3 +4,4 @@
 /.tmp/reclass
 # age private key (if stored locally in the repo, never commit this)
 /.age-key.txt
+scripts/__pycache__

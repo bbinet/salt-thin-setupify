@@ -5,12 +5,12 @@
 #   2. The public key will be automatically added to this file
 #   3. Run `make sops_install_hook` to install the pre-commit hook
 #
-# The following regex matches YAML keys considered secrets (case-insensitive
-# substring match). This covers both exact keys (password, secret, token…)
-# and compound keys like INFLUXDB_ADMIN_PASSWORD, secret_of_grafana,
-# grafana_admin_password, ssh_key, keyfile, gpg_key, private_key, etc.
-# (\bkey matches key, keyfile, ssh_key, api_key… but not donkey/monkey).
+# Only files under reclass/classes/secret/ are encrypted with SOPS.
+# All other reclass files are plain YAML and committed as-is.
+#
+# All values and comments in secret files are encrypted by sops natively.
+# Note: do NOT use encrypted_comment_regex here — despite its name it acts
+# as a value-encryption filter and would leave most values in plaintext.
 creation_rules:
-  - path_regex: reclass/.*\.ya?ml$
-    encrypted_regex: "(?i)(password|passwd|secret|token|credential|auth|\\bkey)"
+  - path_regex: reclass/classes/secret/.*\.ya?ml$
     age: age1qqdlc94dwje03ky50arqwp27nk2da0w3avxc5kg29a7adsfwpssq5hy38u

@@ -67,14 +67,15 @@ generate_age_key() {
 
 update_sops_yaml() {
     local pub_key="$1"
-    if grep -q "age1REPLACE_WITH_YOUR_PUBLIC_KEY" "${SOPS_YAML}"; then
+    if grep -q "${pub_key}" "${SOPS_YAML}"; then
+        echo "Public key already present in .sops.yaml"
+    elif grep -q "age1REPLACE_WITH_YOUR_PUBLIC_KEY" "${SOPS_YAML}"; then
         sed -i "s|age1REPLACE_WITH_YOUR_PUBLIC_KEY|${pub_key}|" "${SOPS_YAML}"
         echo "Updated .sops.yaml with public key"
-    elif grep -q "${pub_key}" "${SOPS_YAML}"; then
-        echo "Public key already present in .sops.yaml"
     else
-        echo "WARNING: .sops.yaml already has a different key. Edit it manually to add:"
-        echo "    age: ${pub_key}"
+        # Replace existing age key with the local one
+        sed -i "s|age: age1.*|age: ${pub_key}|" "${SOPS_YAML}"
+        echo "Updated .sops.yaml with local public key"
     fi
 }
 
@@ -92,8 +93,9 @@ echo "IMPORTANT: Keep this file secure and do NOT commit it to git."
 echo ""
 echo "Next steps:"
 echo "  1. Run 'make sops_install_hook' to install the git pre-commit hook"
-echo "  2. Add passwords to reclass/ YAML files under keys like 'password:'"
+echo "  2. Place secrets in reclass/classes/secret/<node>.yml under _param:"
 echo "     They will be automatically encrypted before each commit"
-echo "  3. Share the public key in .sops.yaml with your team."
+echo "  3. Import the secret class in your node: add 'secret.<node>' to its classes:"
+echo "  4. Share the public key in .sops.yaml with your team."
 echo "     Each team member must run 'make sops_setup' with their own key,"
 echo "     then add their public key to .sops.yaml (multiple keys supported)."

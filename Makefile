@@ -20,14 +20,14 @@ help:
 	@echo "    grains pillar salt apply_ext apply_formula"
 	@echo "    apply apply_nosudo apply_sudo"
 	@echo "    test_apply test_apply_nosudo test_apply_sudo"
-	@echo "    check test_sops_apply"
+	@echo "    test (or test-unit test-env test-makefile test-sops-encryption test-sops-apply)"
 	@echo "    all (= deps pull apply_ext apply_formula apply_nosudo apply_sudo)"
 	@echo ""
 	@echo "SOPS/age encryption targets:"
 	@echo "    sops_setup           install sops + age and generate age key pair"
 	@echo "    sops_install_hook    install git pre-commit hook for auto-encryption"
-	@echo "    sops_decrypt         decrypt reclass/ secrets to .tmp/reclass/"
-	@echo "    sops_encrypt         (re)encrypt all secrets in reclass/"
+	@echo "    sops_decrypt         decrypt reclass/classes/secret/ to .tmp/reclass/"
+	@echo "    sops_encrypt         (re)encrypt all files in reclass/classes/secret/"
 	@echo "    sops_history_encrypt rewrite git history to encrypt past commits"
 	@echo "                         use DRY_RUN=1 to preview, SINCE=<ref> to limit scope"
 
@@ -51,8 +51,8 @@ pull:
 	fi; \
 	echo "$${minion_id:-${HOST}}" > .tmp/etc/salt/minion_id
 
-# Sentinel file: rebuilt whenever requirements.txt changes
-.tmp/.relenv_installed: requirements.txt
+# Download and extract relenv Python (only when the binary is missing)
+.tmp/.relenv_extracted:
 	mkdir -p .tmp
 	@echo "==> Downloading relenv Python $(PYTHON_VERSION) for $(ARCH)..."
 	wget -O .tmp/relenv.tar.xz $(RELENV_URL)
@@ -65,6 +65,10 @@ pull:
 	rm -rf .tmp/relenv && mkdir -p .tmp/relenv
 	tar xJf .tmp/relenv.tar.xz -C .tmp/relenv/
 	rm -f .tmp/relenv.tar.xz
+	touch .tmp/.relenv_extracted
+
+# Install pip packages (re-run whenever requirements.txt changes)
+.tmp/.relenv_installed: .tmp/.relenv_extracted requirements.txt
 	@echo "==> Installing salt $(SALT_VERSION)..."
 	.tmp/relenv/bin/pip3 install --quiet "salt==$(SALT_VERSION)"
 	@echo "==> Installing extra requirements..."
@@ -81,14 +85,7 @@ relenv: .tmp/.relenv_installed .tmp/etc/salt/minion_id .tmp/reclass
 .tmp/reclass:
 	$(MAKE) sops_decrypt
 relenv_rm:
-	rm -rf .tmp/relenv .tmp/.relenv_installed
-
-check: .tmp/.relenv_installed
-	@bash tests/check_env.sh
-	@bash tests/check_makefile.sh
-
-test_sops_apply: .tmp/.relenv_installed
-	@bash tests/test-sops-apply.sh
+	rm -rf .tmp/relenv .tmp/.relenv_extracted .tmp/.relenv_installed
 
 salt: relenv
 	@arg="$(arg)"; \
@@ -147,7 +144,8 @@ sops_install_hook:
 	@echo "Pre-commit hook installed at .git/hooks/pre-commit"
 
 # Decrypt encrypted reclass files to .tmp/reclass/ for use by salt-call.
-# Files without sops metadata are copied as-is.
+# Only files under reclass/classes/secret/ are decrypted; all others are
+# copied as plain YAML.
 sops_decrypt:
 	@rm -rf .tmp/reclass && mkdir -p .tmp/reclass
 	@find reclass -mindepth 1 -type d | while read d; do \
@@ -162,19 +160,26 @@ sops_decrypt:
 	@find reclass -name "*.yml" -o -name "*.yaml" | while read f; do \
 		dest=".tmp/$${f}"; \
 		mkdir -p "$$(dirname $${dest})"; \
-		if grep -q "^sops:" "$${f}" 2>/dev/null; then \
-			if ! command -v sops >/dev/null 2>&1; then \
-				echo "sops not found but $${f} is encrypted. Run 'make sops_setup' first."; exit 1; \
+		case "$${f}" in \
+		reclass/classes/secret/*) \
+			if grep -q "^sops:" "$${f}" 2>/dev/null; then \
+				if ! command -v sops >/dev/null 2>&1; then \
+					echo "sops not found but $${f} is encrypted. Run 'make sops_setup' first."; exit 1; \
+				fi; \
+				SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --decrypt "$${f}" > "$${dest}" || exit 1; \
+				echo "  decrypted: $${f}"; \
+			else \
+				cp "$${f}" "$${dest}"; \
 			fi; \
-			SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --decrypt "$${f}" > "$${dest}"; \
-			echo "  decrypted: $${f}"; \
-		else \
+			;; \
+		*) \
 			cp "$${f}" "$${dest}"; \
-		fi; \
+			;; \
+		esac; \
 	done
 	@echo "Reclass files ready in .tmp/reclass/"
 
-# Encrypt (or re-encrypt) all reclass YAML files that contain sensitive keys.
+# Encrypt (or re-encrypt) all YAML files in reclass/classes/secret/.
 sops_encrypt:
 	@if ! command -v sops >/dev/null 2>&1; then \
 		echo "sops not found. Run 'make sops_setup' first."; exit 1; \
@@ -182,14 +187,16 @@ sops_encrypt:
 	@if grep -q "age1REPLACE_WITH_YOUR_PUBLIC_KEY" .sops.yaml 2>/dev/null; then \
 		echo ".sops.yaml not configured. Run 'make sops_setup' first."; exit 1; \
 	fi
-	@find reclass -name "*.yml" -o -name "*.yaml" | while read f; do \
+	@if ! [ -d reclass/classes/secret ]; then \
+		echo "No reclass/classes/secret/ directory found, nothing to encrypt."; exit 0; \
+	fi
+	@find reclass/classes/secret -name "*.yml" -o -name "*.yaml" | while read f; do \
 		if grep -q "^sops:" "$${f}" 2>/dev/null; then \
 			echo "  re-encrypting: $${f}"; \
-			SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --encrypt --in-place "$${f}"; \
-		elif grep -qE "^[[:space:]]+(password|passwd|secret|token|api_key|private_key|pass|key|credential|auth)[[:space:]]*:" "$${f}" 2>/dev/null; then \
+		else \
 			echo "  encrypting: $${f}"; \
-			SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --encrypt --in-place "$${f}"; \
 		fi; \
+		SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --encrypt --in-place "$${f}" || exit 1; \
 	done
 
 # Rewrite git history to encrypt secrets committed in the past (one-time migration).
@@ -206,7 +213,29 @@ sops_history_encrypt:
 		$${dry_run_flag} $${since_flag} $${yes_flag} \
 		$(if $(KEY_FILE),--key-file $(KEY_FILE),)
 
-test_sops:
+test_setup: .tmp/.relenv_installed
+	.tmp/relenv/bin/pip3 install --quiet pytest
+
+test-unit: test_setup
+	@echo "══ Unit tests (pytest) ══════════════════════════════════════════════"
+	.tmp/relenv/bin/python3 -m pytest scripts/tests/ -v
+
+test-env: .tmp/.relenv_installed
+	@echo "══ Environment checks ═══════════════════════════════════════════════"
+	@bash tests/test-env.sh
+
+test-makefile: .tmp/.relenv_installed
+	@echo "══ Makefile checks ═════════════════════════════════════════════════"
+	@bash tests/test-makefile.sh
+
+test-sops-encryption:
+	@echo "══ SOPS encryption tests ═══════════════════════════════════════════"
 	@bash tests/test-sops-encryption.sh
 
-.PHONY: deps pull relenv relenv_rm check test_sops_apply grains pillar salt apply apply_ext apply_formula apply_nosudo apply_sudo test_apply test_apply_nosudo test_apply_sudo all sops_setup sops_install_hook sops_decrypt sops_encrypt sops_history_encrypt test_sops
+test-sops-apply: .tmp/.relenv_installed
+	@echo "══ SOPS apply tests ════════════════════════════════════════════════"
+	@bash tests/test-sops-apply.sh
+
+test: test-unit test-env test-makefile test-sops-encryption test-sops-apply
+
+.PHONY: deps pull relenv relenv_rm grains pillar salt apply apply_ext apply_formula apply_nosudo apply_sudo test_apply test_apply_nosudo test_apply_sudo all sops_setup sops_install_hook sops_decrypt sops_encrypt sops_history_encrypt test_setup test-unit test-env test-makefile test-sops-encryption test-sops-apply test
