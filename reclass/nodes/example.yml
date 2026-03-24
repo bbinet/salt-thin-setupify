@@ -1,11 +1,8 @@
 classes:
   - service.docker-composition.hig
+  - secret.nodes.example
 
 parameters:
-
-  _param:
-    influxdb_admin_password: s3cr3t_influxdb
-    grafana_admin_password: s3cr3t_grafana
 
   setupify:
 
@@ -50,13 +47,13 @@ parameters:
         services:
           influxdb:
             environment:
-              INFLUXDB_ADMIN_PASSWORD: ${_param:influxdb_admin_password}
+              INFLUXDB_ADMIN_PASSWORD: ${_param:_secret:influxdb_admin_password}
             volumes:
               - influxdb-data:/var/lib/influxdb
             ports:
               - "127.0.0.1:8086:8086"
           grafana:
             environment:
-              GF_SECURITY_ADMIN_PASSWORD: ${_param:grafana_admin_password}
+              GF_SECURITY_ADMIN_PASSWORD: ${_param:_secret:grafana_admin_password}
             volumes:
               - grafana-data:/var/lib/grafana

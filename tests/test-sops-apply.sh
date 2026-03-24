@@ -52,7 +52,7 @@ file_roots:
 reclass: &reclass
   storage_type: yaml_fs
   inventory_base_uri: ${reclass_dir}
-  scalar_parameters: "_param"
+  scalar_parameters: "_secret"
   ignore_class_notfound: true
   ignore_class_regexp:
     - 'service.*'
