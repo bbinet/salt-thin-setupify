@@ -231,27 +231,16 @@ fi
 
 # ═══════════════════════════════════════════════════════════════════════════
 echo ""
-echo "══ 4. relenv_rm + relenv reinstall ═══════════════════════════════════"
+echo "══ 4. relenv checks (non-destructive) ═══════════════════════════════"
+# Note: we no longer run relenv_rm + reinstall here to avoid destroying the
+# existing environment and re-downloading ~31 MB on every test run.
 
-make relenv_rm >/dev/null 2>&1
-if [ ! -d "${CURDIR}/.tmp/relenv" ] && [ ! -f "${CURDIR}/.tmp/.relenv_installed" ]; then
-    pass "make relenv_rm: .tmp/relenv and sentinel removed"
-else
-    fail "make relenv_rm: directory or sentinel still present"
-fi
-
-echo "  (reinstalling relenv — this downloads ~31 MB, may take a moment...)"
-if make relenv minion_id=example >/dev/null 2>&1; then
-    pass "make relenv: reinstall succeeds"
-else
-    fail "make relenv: reinstall failed"
-fi
-
-if [ -x "${CURDIR}/.tmp/relenv/bin/salt-call" ] && \
+if [ -x "${CURDIR}/.tmp/relenv/bin/python3" ] && \
+   [ -x "${CURDIR}/.tmp/relenv/bin/salt-call" ] && \
    [ -f "${CURDIR}/.tmp/.relenv_installed" ]; then
-    pass "make relenv: binaries and sentinel present after reinstall"
+    pass "relenv binaries and sentinel present"
 else
-    fail "make relenv: missing binaries or sentinel after reinstall"
+    fail "relenv binaries or sentinel missing"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════

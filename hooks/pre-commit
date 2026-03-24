@@ -21,8 +21,8 @@ if grep -q "age1REPLACE_WITH_YOUR_PUBLIC_KEY" "${SOPS_YAML}" 2>/dev/null; then
     exit 0
 fi
 
-# Get staged reclass YAML files
-staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^reclass/.*\.ya?ml$' || true)
+# Get staged secret YAML files (only reclass/classes/secret/ is encrypted)
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^reclass/classes/secret/.*\.ya?ml$' || true)
 
 if [ -z "${staged_files}" ]; then
     exit 0
