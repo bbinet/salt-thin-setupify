@@ -166,7 +166,7 @@ sops_decrypt:
 				if ! command -v sops >/dev/null 2>&1; then \
 					echo "sops not found but $${f} is encrypted. Run 'make sops_setup' first."; exit 1; \
 				fi; \
-				SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --decrypt "$${f}" > "$${dest}"; \
+				SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --decrypt "$${f}" > "$${dest}" || exit 1; \
 				echo "  decrypted: $${f}"; \
 			else \
 				cp "$${f}" "$${dest}"; \
@@ -196,7 +196,7 @@ sops_encrypt:
 		else \
 			echo "  encrypting: $${f}"; \
 		fi; \
-		SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --encrypt --in-place "$${f}"; \
+		SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --encrypt --in-place "$${f}" || exit 1; \
 	done
 
 # Rewrite git history to encrypt secrets committed in the past (one-time migration).
