@@ -8,11 +8,9 @@
 # Only files under reclass/classes/secret/ are encrypted with SOPS.
 # All other reclass files are plain YAML and committed as-is.
 #
-# All values in secret files are encrypted (no encrypted_regex filter).
-# Comments containing "_secret_:" are also encrypted.  Use this convention
-# to protect secrets stored in comments:
-#   # _secret_: my_plaintext_password
+# All values and comments in secret files are encrypted by sops natively.
+# Note: do NOT use encrypted_comment_regex here — despite its name it acts
+# as a value-encryption filter and would leave most values in plaintext.
 creation_rules:
   - path_regex: reclass/classes/secret/.*\.ya?ml$
-    encrypted_comment_regex: "_secret_:"
     age: age1qqdlc94dwje03ky50arqwp27nk2da0w3avxc5kg29a7adsfwpssq5hy38u
