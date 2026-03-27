@@ -191,12 +191,36 @@ sops_encrypt:
 		echo "No reclass/classes/secret/ directory found, nothing to encrypt."; exit 0; \
 	fi
 	@find reclass/classes/secret -name "*.yml" -o -name "*.yaml" | while read f; do \
-		if grep -q "^sops:" "$${f}" 2>/dev/null; then \
+		tmp_src=".tmp/$${f}"; \
+		if [ -f "$${tmp_src}" ]; then \
+			echo "  encrypting (from .tmp): $${f}"; \
+			src="$${tmp_src}"; \
+		elif grep -q "^sops:" "$${f}" 2>/dev/null; then \
 			echo "  re-encrypting: $${f}"; \
+			if ! SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --decrypt "$${f}" > "$${f}.plain" 2>/dev/null; then \
+				rm -f "$${f}.plain"; \
+				echo ""; \
+				echo "ERROR: cannot re-encrypt $${f}"; \
+				echo "To edit encrypted files:"; \
+				echo "  1. make sops_decrypt"; \
+				echo "  2. edit .tmp/reclass/classes/secret/..."; \
+				echo "  3. make sops_encrypt"; \
+				echo ""; \
+				exit 1; \
+			fi; \
+			src="$${f}.plain"; \
 		else \
 			echo "  encrypting: $${f}"; \
+			src="$${f}"; \
 		fi; \
-		SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --encrypt --in-place "$${f}" || exit 1; \
+		if SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE}" sops --encrypt "$${src}" > "$${f}.enc" 2>/dev/null; then \
+			mv "$${f}.enc" "$${f}"; \
+		else \
+			rm -f "$${f}.enc"; \
+			echo "ERROR: failed to encrypt $${f}"; \
+			exit 1; \
+		fi; \
+		rm -f "$${f}.plain"; \
 	done
 
 # Rewrite git history to encrypt secrets committed in the past (one-time migration).
