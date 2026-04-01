@@ -112,6 +112,7 @@ apply_formula: relenv
 	# https://github.com/saltstack/salt/issues/38072
 	${SALT_APPLY} setupify.formula
 	${SALT_APPLY} setupify.formula
+	$(MAKE) sync_reclass_symlinks
 	${SALT} saltutil.sync_all
 apply_nosudo: relenv
 	${SALT_APPLY} setupify.nosudo
@@ -143,6 +144,16 @@ sops_install_hook:
 	@chmod +x .git/hooks/pre-commit
 	@echo "Pre-commit hook installed at .git/hooks/pre-commit"
 
+# Sync symlinks from reclass/ into .tmp/reclass/ (e.g. classes/service/ created by formula.sls).
+# This is fast and does not touch secrets — only symlinks are updated.
+sync_reclass_symlinks:
+	@find reclass -mindepth 1 -maxdepth 5 -type l | while read lnk; do \
+		target="$$(readlink -f "$$lnk")"; \
+		dest=".tmp/$${lnk}"; \
+		mkdir -p "$$(dirname $${dest})"; \
+		ln -sf "$$target" "$$dest"; \
+	done
+
 # Decrypt encrypted reclass files to .tmp/reclass/ for use by salt-call.
 # Only files under reclass/classes/secret/ are decrypted; all others are
 # copied as plain YAML.
@@ -151,12 +162,7 @@ sops_decrypt:
 	@find reclass -mindepth 1 -type d | while read d; do \
 		mkdir -p ".tmp/$${d}"; \
 	done
-	@find reclass -mindepth 1 -maxdepth 5 -type l | while read lnk; do \
-		target="$$(readlink -f "$$lnk")"; \
-		dest=".tmp/$${lnk}"; \
-		mkdir -p "$$(dirname $${dest})"; \
-		ln -sf "$$target" "$$dest"; \
-	done
+	$(MAKE) sync_reclass_symlinks
 	@find reclass -name "*.yml" -o -name "*.yaml" | while read f; do \
 		dest=".tmp/$${f}"; \
 		mkdir -p "$$(dirname $${dest})"; \
@@ -262,4 +268,4 @@ test-sops-apply: .tmp/.relenv_installed
 
 test: test-unit test-env test-makefile test-sops-encryption test-sops-apply
 
-.PHONY: deps pull relenv relenv_rm grains pillar salt apply apply_ext apply_formula apply_nosudo apply_sudo test_apply test_apply_nosudo test_apply_sudo all sops_setup sops_install_hook sops_decrypt sops_encrypt sops_history_encrypt test_setup test-unit test-env test-makefile test-sops-encryption test-sops-apply test
+.PHONY: deps pull relenv relenv_rm grains pillar salt apply apply_ext apply_formula apply_nosudo apply_sudo test_apply test_apply_nosudo test_apply_sudo all sync_reclass_symlinks sops_setup sops_install_hook sops_decrypt sops_encrypt sops_history_encrypt test_setup test-unit test-env test-makefile test-sops-encryption test-sops-apply test
